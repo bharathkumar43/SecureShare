@@ -1,35 +1,84 @@
 package com.secureshare.model;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
+import java.time.LocalDateTime;
+import java.util.List;
 
 @Entity
+@Table(name = "file_shares")
 public class FileShare {
 
     @Id
-    @GeneratedValue
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(name = "share_id", unique = true, nullable = false)
+    private String shareId;
+
+    @Column(name = "source_cloud")
     private String sourceCloud;
+
+    @Column(name = "destination_cloud")
     private String destinationCloud;
+
+    @Column(name = "to_email")
     private String toEmail;
+
+    @Column(name = "from_email")
     private String fromEmail;
-    private String password;  // Encrypted password
-    private String expiry;
+
+    @Column(name = "password_hash")
+    private String passwordHash;
+
+    @Column(name = "expiry")
+    private LocalDateTime expiry;
+
+    @Column(name = "download_limit")
     private int downloadLimit;
+
+    @Column(name = "downloads_used")
+    private int downloadsUsed = 0;
+
+    @Column(name = "watermark")
     private boolean watermark;
-    private String link;
-    private String status;    // "Active" or "Revoked"
 
-    // === Getters and Setters ===
+    @Column(name = "destination_link", length = 1000)
+    private String destinationLink;
 
+    @Column(name = "status")
+    private String status = "ACTIVE";
+
+    @Column(name = "created_at")
+    private LocalDateTime createdAt;
+
+    @ElementCollection
+    @CollectionTable(name = "share_files", joinColumns = @JoinColumn(name = "share_id"))
+    @Column(name = "file_path")
+    private List<String> filePaths;
+
+    @Column(name = "file_count")
+    private int fileCount;
+
+    // Constructors
+    public FileShare() {
+        this.createdAt = LocalDateTime.now();
+    }
+
+    // Getters and Setters
     public Long getId() {
         return id;
     }
 
     public void setId(Long id) {
         this.id = id;
+    }
+
+    public String getShareId() {
+        return shareId;
+    }
+
+    public void setShareId(String shareId) {
+        this.shareId = shareId;
     }
 
     public String getSourceCloud() {
@@ -64,19 +113,19 @@ public class FileShare {
         this.fromEmail = fromEmail;
     }
 
-    public String getPassword() {
-        return password;
+    public String getPasswordHash() {
+        return passwordHash;
     }
 
-    public void setPassword(String password) {
-        this.password = password;
+    public void setPasswordHash(String passwordHash) {
+        this.passwordHash = passwordHash;
     }
 
-    public String getExpiry() {
+    public LocalDateTime getExpiry() {
         return expiry;
     }
 
-    public void setExpiry(String expiry) {
+    public void setExpiry(LocalDateTime expiry) {
         this.expiry = expiry;
     }
 
@@ -88,6 +137,14 @@ public class FileShare {
         this.downloadLimit = downloadLimit;
     }
 
+    public int getDownloadsUsed() {
+        return downloadsUsed;
+    }
+
+    public void setDownloadsUsed(int downloadsUsed) {
+        this.downloadsUsed = downloadsUsed;
+    }
+
     public boolean isWatermark() {
         return watermark;
     }
@@ -96,12 +153,12 @@ public class FileShare {
         this.watermark = watermark;
     }
 
-    public String getLink() {
-        return link;
+    public String getDestinationLink() {
+        return destinationLink;
     }
 
-    public void setLink(String link) {
-        this.link = link;
+    public void setDestinationLink(String destinationLink) {
+        this.destinationLink = destinationLink;
     }
 
     public String getStatus() {
@@ -110,5 +167,45 @@ public class FileShare {
 
     public void setStatus(String status) {
         this.status = status;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public List<String> getFilePaths() {
+        return filePaths;
+    }
+
+    public void setFilePaths(List<String> filePaths) {
+        this.filePaths = filePaths;
+    }
+
+    public int getFileCount() {
+        return fileCount;
+    }
+
+    public void setFileCount(int fileCount) {
+        this.fileCount = fileCount;
+    }
+
+    // Helper methods
+    public int getRemainingDownloads() {
+        if ("unlimited".equals(String.valueOf(downloadLimit))) {
+            return Integer.MAX_VALUE;
+        }
+        return Math.max(0, downloadLimit - downloadsUsed);
+    }
+
+    public boolean isExpired() {
+        return expiry != null && LocalDateTime.now().isAfter(expiry);
+    }
+
+    public boolean isActive() {
+        return "ACTIVE".equals(status) && !isExpired() && getRemainingDownloads() > 0;
     }
 }
