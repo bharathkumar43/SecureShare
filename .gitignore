@@ -58,3 +58,4 @@ dist-ssr
 *.sln
 *.sw?
 >>>>>>> 6e439d2b3f22cf256d78bf518f498f9eefbfa5c0
+.env
